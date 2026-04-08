@@ -327,6 +327,7 @@ function WeatherBar({ isDark }) {
         background: S ? "rgba(0,0,0,0.25)" : "rgba(248,250,255,0.9)",
         borderBottom: `0.5px solid ${S ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
         overflowX: "auto",
+        width: "100%",
       }}
     >
       <span
@@ -342,7 +343,14 @@ function WeatherBar({ isDark }) {
       >
         7-DAY
       </span>
-      <div style={{ display: "flex", gap: 14 }}>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
         {fc.map((d, i) => (
           <div
             key={i}
@@ -466,7 +474,6 @@ function Hero({
           gap: 6,
         }}
       >
-        {/* New Jump Icon with hidden input over it */}
         <div
           style={{
             position: "relative",
@@ -522,7 +529,11 @@ function Hero({
         </button>
       </div>
 
-      <div style={{ position: "absolute", bottom: 20, left: 26, zIndex: 10 }}>
+      {/* Made class-based to allow positioning via Media Query */}
+      <div
+        className="hero-text"
+        style={{ position: "absolute", left: 26, zIndex: 10 }}
+      >
         <div
           style={{
             color: "rgba(255,255,255,.6)",
@@ -1345,6 +1356,7 @@ function Grid({
                 </button>
               )}
 
+              {/* Increased font size for holiday emojis here to 15px */}
               {hol && date && (
                 <div
                   title={hol.label}
@@ -1353,7 +1365,7 @@ function Grid({
                     bottom: evts.length || rems.length || stks.length ? 18 : 4,
                     left: "50%",
                     transform: "translateX(-50%)",
-                    fontSize: 10,
+                    fontSize: 15,
                     lineHeight: 1,
                     cursor: "default",
                     animation:
@@ -1560,6 +1572,8 @@ const GlobalStyles = ({ accent }) => (
       font-size: 11px;
     }
     
+    .hero-text { bottom: 20px; }
+
     @media (min-width: 768px) {
       .cal-main-container { flex-direction: row; align-items: stretch; }
       .cal-left-col { width: 40%; display: flex; flex-direction: column; }
@@ -1574,6 +1588,10 @@ const GlobalStyles = ({ accent }) => (
       }
       .cal-cell {
         min-height: 84px !important;
+      }
+      .hero-text { 
+        bottom: auto; 
+        top: 20px; 
       }
     }
     @media print { .no-print { display: none !important; } body { background: white !important; } }
@@ -1599,7 +1617,7 @@ export default function WallCalendar() {
   });
 
   const [sels, setSels] = useState([]);
-  const [targetDates, setTargetDates] = useState(null); // Replaced activeDate -> takes an array of Dates
+  const [targetDates, setTargetDates] = useState(null);
   const [showSettings, setSS] = useState(false);
   const [confetti, setCf] = useState(false);
   const [accent, setAccent] = useState("#3b82f6");
@@ -1678,15 +1696,16 @@ export default function WallCalendar() {
   const allSelectedDates = getAllSelectedDates(sels);
 
   return (
+    // Dynamic Radial background changes depending on accent color of current month
     <div
       style={{
         minHeight: "100vh",
         background: S
-          ? "radial-gradient(circle at top left, #1e293b 0%, #020617 100%)"
-          : "radial-gradient(circle at top left, #f8fafc 0%, #cbd5e1 100%)",
+          ? `radial-gradient(circle at top left, ${accent}22 0%, #020617 100%)`
+          : `radial-gradient(circle at top left, ${accent}33 0%, #cbd5e1 100%)`,
         display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
+        flexDirection: "column",
+        alignItems: "center",
         padding: "20px 12px 40px",
         fontFamily: font,
       }}
@@ -1875,17 +1894,16 @@ export default function WallCalendar() {
         </div>
       </div>
 
+      {/* Moved down and changed position to relative so it won't be covered by elements below */}
       <div
         className="no-print"
         style={{
-          position: "absolute",
-          bottom: 10,
+          marginTop: 20,
           textAlign: "center",
           width: "100%",
           fontSize: 10,
           opacity: S ? 0.4 : 0.6,
           color: S ? "white" : "#0f172a",
-          pointerEvents: "none",
         }}
       >
         Double-click date · Drag for multi-select · Drag sticky note onto any
