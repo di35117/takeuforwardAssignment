@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
-import ColorThief from "colorthief/dist/color-thief.mjs";
+import { FastAverageColor } from "fast-average-color";
 import { Sun, Moon, Calendar as CalIcon, FastForward } from "lucide-react";
 
 export default function CalendarHero({ theme, currentDate, store }) {
   const [dynamicAccent, setDynamicAccent] = useState(theme.accent);
 
-  // Dynamic Color Extraction
+  // Dynamic Color Extraction (Modernized)
   useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = theme.image;
-    img.onload = () => {
-      try {
-        const colorThief = new ColorThief();
-        const color = colorThief.getColor(img);
-        setDynamicAccent(`rgb(${color[0]}, ${color[1]}, ${color[2]})`);
-      } catch (e) {
-        setDynamicAccent(theme.accent); // Fallback
-      }
-    };
-  }, [theme.image]);
+    const fac = new FastAverageColor();
+
+    fac
+      .getColorAsync(theme.image)
+      .then((color) => {
+        // color.hex gives us a perfect hex code like "#ff0000"
+        setDynamicAccent(color.hex);
+      })
+      .catch((e) => {
+        console.warn("Could not extract color, using fallback.", e);
+        setDynamicAccent(theme.accent); // Fallback to your themeData
+      });
+
+    // Cleanup to prevent memory leaks if the component unmounts quickly
+    return () => fac.destroy();
+  }, [theme.image, theme.accent]);
 
   const handleQuickJump = (e) => {
     const [year, month] = e.target.value.split("-");
