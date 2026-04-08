@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ColorThief from "colorthief";
+import ColorThief from "colorthief/dist/color-thief.mjs";
 import { Sun, Moon, Calendar as CalIcon, FastForward } from "lucide-react";
 
 export default function CalendarHero({ theme, currentDate, store }) {
