@@ -11,6 +11,8 @@ import {
   Download,
   Bell,
   Trash2,
+  Calendar as CalendarIcon,
+  Edit3,
 } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -118,8 +120,25 @@ const HOLIDAYS = {
 
 const FONTS = {
   sans: "system-ui, -apple-system, sans-serif",
+  arial: "Arial, Helvetica, sans-serif",
+  verdana: "Verdana, Geneva, sans-serif",
+  tahoma: "Tahoma, Geneva, sans-serif",
+  trebuchet: "'Trebuchet MS', Helvetica, sans-serif",
+  helvetica: "Helvetica, Arial, sans-serif",
+  futura: "Futura, 'Trebuchet MS', Arial, sans-serif",
+  century: "'Century Gothic', sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
+  times: "'Times New Roman', Times, serif",
+  garamond: "Garamond, serif",
+  palatino: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
   mono: "'Fira Code', 'Courier New', monospace",
+  courier: "'Courier New', Courier, monospace",
+  consolas: "Consolas, monaco, monospace",
+  monaco: "Monaco, consolas, monospace",
+  lucida: "'Lucida Console', Monaco, monospace",
+  comic: "'Comic Sans MS', cursive, sans-serif",
+  impact: "Impact, Charcoal, sans-serif",
+  brush: "'Brush Script MT', cursive",
 };
 
 const TYPE_COLOR = {
@@ -133,6 +152,24 @@ const TYPE_COLOR = {
 const getDateKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 const getHolKey = (d) => `${d.getMonth()}-${d.getDate()}`;
 const isSameDay = (a, b) => a && b && a.toDateString() === b.toDateString();
+
+const getAllSelectedDates = (selections) => {
+  const dates = [];
+  selections.forEach((s) => {
+    if (!s.end) {
+      if (!dates.some((d) => isSameDay(d, s.start))) dates.push(s.start);
+    } else {
+      const [start, end] =
+        s.start < s.end ? [s.start, s.end] : [s.end, s.start];
+      let curr = new Date(start);
+      while (curr <= end) {
+        if (!dates.some((d) => isSameDay(d, curr))) dates.push(new Date(curr));
+        curr.setDate(curr.getDate() + 1);
+      }
+    }
+  });
+  return dates.sort((a, b) => a - b);
+};
 
 const extractColor = (src, fallback) =>
   new Promise((resolve) => {
@@ -231,7 +268,6 @@ function Confetti({ active }) {
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, [active]);
-
   if (!active) return null;
   return (
     <canvas
@@ -251,13 +287,9 @@ function Confetti({ active }) {
 
 function WeatherBar({ isDark }) {
   const [fc, setFc] = useState([]);
-
   useEffect(() => {
-    // Guwahati coordinates — change lat/lon as needed
     fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=26.14&longitude=91.73" +
-        "&daily=weathercode,temperature_2m_max,temperature_2m_min" +
-        "&timezone=Asia/Kolkata&forecast_days=7",
+      "https://api.open-meteo.com/v1/forecast?latitude=26.14&longitude=91.73&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Kolkata&forecast_days=7",
     )
       .then((r) => r.json())
       .then((d) => {
@@ -282,7 +314,6 @@ function WeatherBar({ isDark }) {
     ) : (
       <Sun size={13} />
     );
-
   const S = isDark;
   if (!fc.length) return null;
 
@@ -309,7 +340,7 @@ function WeatherBar({ isDark }) {
           textTransform: "uppercase",
         }}
       >
-        7-DAY · GUWAHATI
+        7-DAY
       </span>
       <div style={{ display: "flex", gap: 14 }}>
         {fc.map((d, i) => (
@@ -354,15 +385,6 @@ function WeatherBar({ isDark }) {
             >
               {d.max}°
             </span>
-            <span
-              style={{
-                fontSize: 9,
-                opacity: 0.45,
-                color: S ? "white" : "black",
-              }}
-            >
-              {d.min}°
-            </span>
           </div>
         ))}
       </div>
@@ -383,12 +405,10 @@ function Hero({
   setAccent,
 }) {
   const [mp, setMp] = useState({ x: 50, y: 50 });
-  const [showJump, setShowJump] = useState(false);
 
-  // Extract dominant color from hero image
   useEffect(() => {
     extractColor(theme.image, theme.accent).then(setAccent);
-  }, [theme]);
+  }, [theme, setAccent]);
 
   const onMM = useCallback((e) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -400,18 +420,24 @@ function Hero({
 
   return (
     <div
-      style={{ position: "relative", height: 240, overflow: "hidden" }}
+      className="hero-wrap"
+      style={{
+        position: "relative",
+        minHeight: 260,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+      }}
       onMouseMove={onMM}
     >
-      {/* Parallax background */}
       <div
         style={{
           position: "absolute",
-          inset: "-8%",
+          inset: "-5%",
           backgroundImage: `url(${theme.image})`,
           backgroundSize: "cover",
-          backgroundPosition: `${mp.x}% ${mp.y}%`,
-          transition: "background-position .25s ease",
+          backgroundPosition: `calc(50% + ${(mp.x - 50) * 0.05}%) calc(50% + ${(mp.y - 50) * 0.05}%)`,
+          transition: "background-position .1s ease-out",
         }}
       />
       <div
@@ -423,7 +449,6 @@ function Hero({
         }}
       />
 
-      {/* Prev / Next */}
       <button onClick={() => navigate("prev")} style={arrowBtn("left")}>
         <ChevronLeft size={17} />
       </button>
@@ -431,7 +456,6 @@ function Hero({
         <ChevronRight size={17} />
       </button>
 
-      {/* Top-right controls */}
       <div
         style={{
           position: "absolute",
@@ -442,29 +466,37 @@ function Hero({
           gap: 6,
         }}
       >
-        {showJump ? (
+        {/* New Jump Icon with hidden input over it */}
+        <div
+          style={{
+            position: "relative",
+            ...glassBtn,
+            width: 30,
+            height: 30,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 999,
+          }}
+        >
+          <CalendarIcon size={13} />
           <input
             type="month"
-            autoFocus
             onChange={(e) => {
               const [y, m] = e.target.value.split("-");
-              jumpToDate(+y, +m - 1);
-              setShowJump(false);
+              if (y && m) jumpToDate(+y, +m - 1);
             }}
-            onBlur={() => setShowJump(false)}
             style={{
-              padding: "4px 8px",
-              borderRadius: 6,
-              border: "none",
-              fontSize: 12,
-              outline: "none",
+              position: "absolute",
+              inset: 0,
+              opacity: 0,
+              cursor: "pointer",
+              width: "100%",
             }}
           />
-        ) : (
-          <button onClick={() => setShowJump(true)} style={glassBtn}>
-            Jump →
-          </button>
-        )}
+        </div>
+
         <button
           onClick={() =>
             jumpToDate(new Date().getFullYear(), new Date().getMonth())
@@ -490,7 +522,6 @@ function Hero({
         </button>
       </div>
 
-      {/* Month / Year title */}
       <div style={{ position: "absolute", bottom: 20, left: 26, zIndex: 10 }}>
         <div
           style={{
@@ -531,7 +562,6 @@ const glassBtn = {
   fontSize: 11,
   fontWeight: 600,
 };
-
 const arrowBtn = (side) => ({
   position: "absolute",
   [side]: 14,
@@ -552,33 +582,41 @@ const arrowBtn = (side) => ({
   ...(side === "right" ? { right: 54 } : {}),
 });
 
-// ─── PER-DAY MODAL ────────────────────────────────────────────────────────────
+// ─── PER-DAY / BULK MODAL ─────────────────────────────────────────────────────
 
 function DayModal({
-  date,
+  dates,
   data,
+  bulkUpdateData,
   updateData,
   isDark,
   triggerConfetti,
   onClose,
 }) {
-  const key = getDateKey(date);
-  const hol = HOLIDAYS[getHolKey(date)];
-  const events = data.events?.[key] || [];
-  const reminders = data.reminders?.[key] || [];
+  const isBulk = dates.length > 1;
+  const primaryDate = dates[0];
+  const key = getDateKey(primaryDate);
+
+  const hol = !isBulk ? HOLIDAYS[getHolKey(primaryDate)] : null;
+  const events = !isBulk ? data.events?.[key] || [] : [];
+  const reminders = !isBulk ? data.reminders?.[key] || [] : [];
+  const stickyNotes = !isBulk
+    ? (data.stickyNotes || []).filter((n) => n.dateKey === key)
+    : [];
+
   const [tab, setTab] = useState("events");
   const [ef, setEf] = useState({ title: "", time: "", type: "meeting" });
   const [rf, setRf] = useState({ text: "", time: "" });
-  const [note, setNote] = useState(data.dayNotes?.[key] || "");
+  const [note, setNote] = useState(!isBulk ? data.dayNotes?.[key] || "" : "");
 
   const S = isDark;
   const bg = S ? "#1e293b" : "white";
-  const tx = S ? "white" : "#111";
-  const brd = S ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
+  const tx = S ? "white" : "#0f172a";
+  const brd = S ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)";
   const inp = {
     padding: "8px 12px",
     borderRadius: 8,
-    border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
+    border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.2)"}`,
     background: S ? "rgba(255,255,255,.06)" : "white",
     color: tx,
     fontSize: 13,
@@ -589,35 +627,47 @@ function DayModal({
 
   const saveEvent = () => {
     if (!ef.title) return;
-    updateData("events", {
-      ...data.events,
-      [key]: [...events, { ...ef, id: Date.now() }],
-    });
+    bulkUpdateData("events", dates, ef);
     if (ef.title.toLowerCase().match(/done|won|complete/)) triggerConfetti();
     setEf({ title: "", time: "", type: "meeting" });
+    if (isBulk) onClose();
   };
+
   const delEvent = (id) =>
     updateData("events", {
       ...data.events,
       [key]: events.filter((e) => e.id !== id),
     });
+
   const saveRem = () => {
     if (!rf.text) return;
-    updateData("reminders", {
-      ...data.reminders,
-      [key]: [...reminders, { ...rf, id: Date.now() }],
-    });
+    bulkUpdateData("reminders", dates, rf);
     setRf({ text: "", time: "" });
+    if (isBulk) onClose();
   };
+
   const delRem = (id) =>
     updateData("reminders", {
       ...data.reminders,
       [key]: reminders.filter((r) => r.id !== id),
     });
-  const saveNote = () => {
-    updateData("dayNotes", { ...data.dayNotes, [key]: note });
+
+  const handleNoteChange = (val) => {
+    setNote(val);
+    if (!isBulk) updateData("dayNotes", { ...data.dayNotes, [key]: val });
+  };
+
+  const saveBulkNote = () => {
+    if (!isBulk) return;
+    bulkUpdateData("dayNotes", dates, note);
     onClose();
   };
+
+  const delSticky = (id) =>
+    updateData(
+      "stickyNotes",
+      (data.stickyNotes || []).filter((n) => n.id !== id),
+    );
 
   return (
     <div
@@ -647,7 +697,6 @@ function DayModal({
           flexDirection: "column",
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: "14px 18px",
@@ -659,15 +708,22 @@ function DayModal({
         >
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>
-              {date.toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
+              {isBulk
+                ? `Editing ${dates.length} Selected Dates`
+                : primaryDate.toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
             </div>
-            {hol && (
+            {hol && !isBulk && (
               <div style={{ fontSize: 10, opacity: 0.55, marginTop: 2 }}>
                 {hol.emoji} {hol.label}
+              </div>
+            )}
+            {isBulk && (
+              <div style={{ fontSize: 10, opacity: 0.55, marginTop: 2 }}>
+                Bulk actions apply to all highlighted days.
               </div>
             )}
           </div>
@@ -685,7 +741,6 @@ function DayModal({
           </button>
         </div>
 
-        {/* Tabs */}
         <div style={{ display: "flex", borderBottom: `0.5px solid ${brd}` }}>
           {["events", "reminders", "notes"].map((t) => (
             <button
@@ -717,50 +772,51 @@ function DayModal({
           ))}
         </div>
 
-        {/* Tab body */}
         <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-          {/* ── EVENTS ── */}
           {tab === "events" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {events.map((ev) => (
-                <div
-                  key={ev.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "9px 12px",
-                    background: S ? "rgba(255,255,255,.05)" : "#f8faff",
-                    borderRadius: 8,
-                    borderLeft: `3px solid ${TYPE_COLOR[ev.type] || "#888"}`,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 500, fontSize: 12 }}>
-                      {ev.title}
-                    </div>
-                    <div style={{ fontSize: 10, opacity: 0.5, marginTop: 1 }}>
-                      {ev.time || "All day"} · {ev.type}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => delEvent(ev.id)}
+              {!isBulk &&
+                events.map((ev) => (
+                  <div
+                    key={ev.id}
                     style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      opacity: 0.35,
-                      color: tx,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "9px 12px",
+                      background: S ? "rgba(255,255,255,.05)" : "#f8faff",
+                      borderRadius: 8,
+                      borderLeft: `3px solid ${TYPE_COLOR[ev.type] || "#888"}`,
                     }}
                   >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-              {!events.length && <Empty text="No events yet" />}
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 12 }}>
+                        {ev.title}
+                      </div>
+                      <div style={{ fontSize: 10, opacity: 0.5, marginTop: 1 }}>
+                        {ev.time || "All day"} · {ev.type}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => delEvent(ev.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        opacity: 0.35,
+                        color: tx,
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              {!isBulk && !events.length && <Empty text="No events yet" />}
               <input
                 style={inp}
-                placeholder="Event or meeting title…"
+                placeholder={
+                  isBulk ? "Bulk Event Title…" : "Event or meeting title…"
+                }
                 value={ef.title}
                 onChange={(e) => setEf({ ...ef, title: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && saveEvent()}
@@ -782,50 +838,57 @@ function DayModal({
                   <option value="reminder">Reminder</option>
                 </select>
               </div>
-              <ActionBtn onClick={saveEvent}>+ Add Event</ActionBtn>
+              <ActionBtn onClick={saveEvent}>
+                + Add {isBulk ? "to All" : "Event"}
+              </ActionBtn>
             </div>
           )}
 
-          {/* ── REMINDERS ── */}
           {tab === "reminders" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {reminders.map((r) => (
-                <div
-                  key={r.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "9px 12px",
-                    background: S ? "rgba(255,255,255,.05)" : "#fffbeb",
-                    borderRadius: 8,
-                    borderLeft: "3px solid #f59e0b",
-                  }}
-                >
-                  <Bell size={12} style={{ color: "#f59e0b", flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 500 }}>
-                      {r.text}
-                    </div>
-                    {r.time && (
-                      <div style={{ fontSize: 10, opacity: 0.5 }}>{r.time}</div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => delRem(r.id)}
+              {!isBulk &&
+                reminders.map((r) => (
+                  <div
+                    key={r.id}
                     style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      opacity: 0.35,
-                      color: tx,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "9px 12px",
+                      background: S ? "rgba(255,255,255,.05)" : "#fffbeb",
+                      borderRadius: 8,
+                      borderLeft: "3px solid #f59e0b",
                     }}
                   >
-                    <X size={11} />
-                  </button>
-                </div>
-              ))}
-              {!reminders.length && <Empty text="No reminders" />}
+                    <Bell
+                      size={12}
+                      style={{ color: "#f59e0b", flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500 }}>
+                        {r.text}
+                      </div>
+                      {r.time && (
+                        <div style={{ fontSize: 10, opacity: 0.5 }}>
+                          {r.time}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => delRem(r.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        opacity: 0.35,
+                        color: tx,
+                      }}
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              {!isBulk && !reminders.length && <Empty text="No reminders" />}
               <input
                 style={inp}
                 placeholder="Reminder…"
@@ -840,27 +903,81 @@ function DayModal({
                 onChange={(e) => setRf({ ...rf, time: e.target.value })}
               />
               <ActionBtn onClick={saveRem} color="#f59e0b">
-                + Add Reminder
+                + Add {isBulk ? "to All" : "Reminder"}
               </ActionBtn>
             </div>
           )}
 
-          {/* ── NOTES ── */}
           {tab === "notes" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Notes for this day…"
-                style={{
-                  ...inp,
-                  minHeight: 140,
-                  resize: "vertical",
-                  lineHeight: 1.6,
-                  padding: "10px 12px",
-                }}
-              />
-              <ActionBtn onClick={saveNote}>Save Notes</ActionBtn>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {!isBulk && stickyNotes.length > 0 && (
+                <div>
+                  <Label>Sticky Notes</Label>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  >
+                    {stickyNotes.map((sn) => (
+                      <div
+                        key={sn.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 10px",
+                          background: "#fef08a",
+                          color: "#713f12",
+                          borderRadius: 6,
+                          fontSize: 13,
+                          border: "0.5px solid #fde047",
+                        }}
+                      >
+                        <span>{sn.text}</span>
+                        <button
+                          onClick={() => delSticky(sn.id)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#713f12",
+                            opacity: 0.6,
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label>
+                  {isBulk
+                    ? "Apply Note to All Dates"
+                    : "Day Notes (Auto-saves)"}
+                </Label>
+                <textarea
+                  value={note}
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  placeholder={
+                    isBulk
+                      ? "Type note to apply to all selected days..."
+                      : "Type notes here... they save automatically."
+                  }
+                  style={{
+                    ...inp,
+                    minHeight: 140,
+                    resize: "vertical",
+                    lineHeight: 1.6,
+                    padding: "10px 12px",
+                  }}
+                />
+                {isBulk && (
+                  <div style={{ marginTop: 10 }}>
+                    <ActionBtn onClick={saveBulkNote}>
+                      Apply Note to All
+                    </ActionBtn>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -875,11 +992,11 @@ function SettingsModal({ data, updateData, isDark, currentMonth, onClose }) {
   const [img, setImg] = useState(data.customImages?.[currentMonth] || "");
   const S = isDark;
   const bg = S ? "#1e293b" : "white";
-  const tx = S ? "white" : "#111";
+  const tx = S ? "white" : "#0f172a";
   const inp = {
     padding: "8px 12px",
     borderRadius: 8,
-    border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
+    border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.2)"}`,
     background: S ? "rgba(255,255,255,.06)" : "white",
     color: tx,
     fontSize: 13,
@@ -916,7 +1033,7 @@ function SettingsModal({ data, updateData, isDark, currentMonth, onClose }) {
         <div
           style={{
             padding: "14px 18px",
-            borderBottom: `0.5px solid ${S ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}`,
+            borderBottom: `0.5px solid ${S ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"}`,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -947,15 +1064,17 @@ function SettingsModal({ data, updateData, isDark, currentMonth, onClose }) {
           }}
         >
           <div>
-            <Label>Typography</Label>
+            <Label>Typography (20 Options)</Label>
             <select
               value={data.font || "sans"}
               onChange={(e) => updateData("font", e.target.value)}
-              style={inp}
+              style={{ ...inp, fontFamily: FONTS[data.font || "sans"] }}
             >
-              <option value="sans">Modern — Sans Serif</option>
-              <option value="serif">Classic — Serif</option>
-              <option value="mono">Developer — Monospace</option>
+              {Object.keys(FONTS).map((key) => (
+                <option key={key} value={key}>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -1024,7 +1143,7 @@ function Grid({
   setSelections,
   isDark,
   accent,
-  setActiveDate,
+  setTargetDates,
   triggerConfetti,
 }) {
   const [drag, setDrag] = useState(false);
@@ -1074,6 +1193,7 @@ function Grid({
     else setSelections([{ start: d, end: null }]);
     setDrag(true);
   };
+
   const onME = (d) => {
     if (!drag || !d) return;
     setSelections((s) => {
@@ -1082,6 +1202,7 @@ function Grid({
       return n;
     });
   };
+
   const onDrop = (e, d) => {
     e.preventDefault();
     if (!d) return;
@@ -1100,8 +1221,11 @@ function Grid({
   const S = isDark;
 
   return (
-    <div onMouseLeave={() => setDrag(false)} onMouseUp={() => setDrag(false)}>
-      {/* Weekday headers */}
+    <div
+      onMouseLeave={() => setDrag(false)}
+      onMouseUp={() => setDrag(false)}
+      style={{ flex: 1 }}
+    >
       <div
         style={{
           display: "grid",
@@ -1117,10 +1241,10 @@ function Grid({
               textAlign: "center",
               fontSize: 9,
               fontWeight: 700,
-              opacity: 0.35,
+              opacity: S ? 0.45 : 0.6,
               letterSpacing: 1,
               textTransform: "uppercase",
-              color: S ? "white" : "black",
+              color: S ? "white" : "#0f172a",
               padding: "4px 0",
             }}
           >
@@ -1129,7 +1253,6 @@ function Grid({
         ))}
       </div>
 
-      {/* Day cells */}
       <div
         style={{
           display: "grid",
@@ -1157,11 +1280,17 @@ function Grid({
           return (
             <div
               key={i}
+              className="cal-cell"
               style={{
                 position: "relative",
-                height: 68,
+                minHeight: 68,
                 borderRadius: 8,
                 background: st === "in-range" ? `${accent}1a` : "transparent",
+                border: date
+                  ? S
+                    ? "1px solid rgba(255,255,255,0.03)"
+                    : "1px solid rgba(0,0,0,0.08)"
+                  : "transparent",
                 transition: "background .1s",
               }}
               onDragOver={(e) => e.preventDefault()}
@@ -1174,20 +1303,18 @@ function Grid({
             >
               {date && (
                 <button
+                  className="cal-date-btn"
                   onMouseDown={(e) => onMD(e, date)}
                   onMouseEnter={() => onME(date)}
-                  onDoubleClick={() => setActiveDate(date)}
+                  onDoubleClick={() => setTargetDates([date])}
                   style={{
                     position: "absolute",
-                    top: 5,
+                    top: 8,
                     left: "50%",
                     transform: "translateX(-50%)",
-                    width: 28,
-                    height: 28,
                     borderRadius: 999,
                     border: "none",
                     cursor: "pointer",
-                    fontSize: 11,
                     fontWeight: isToday ? 700 : 400,
                     background: isToday
                       ? accent
@@ -1200,10 +1327,10 @@ function Grid({
                         : isWknd
                           ? S
                             ? "rgba(255,255,255,.4)"
-                            : "rgba(0,0,0,.35)"
+                            : "rgba(0,0,0,.45)"
                           : S
                             ? "rgba(255,255,255,.8)"
-                            : "rgba(0,0,0,.8)",
+                            : "rgba(0,0,0,.9)",
                     boxShadow: isToday
                       ? `0 0 0 3px ${accent}35,0 2px 10px ${accent}55`
                       : "none",
@@ -1211,19 +1338,19 @@ function Grid({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    transition: "all 0.1s",
                   }}
                 >
                   {date.getDate()}
                 </button>
               )}
 
-              {/* Holiday emoji indicator */}
               {hol && date && (
                 <div
                   title={hol.label}
                   style={{
                     position: "absolute",
-                    bottom: evts.length ? 18 : 4,
+                    bottom: evts.length || rems.length || stks.length ? 18 : 4,
                     left: "50%",
                     transform: "translateX(-50%)",
                     fontSize: 10,
@@ -1241,7 +1368,6 @@ function Grid({
                 </div>
               )}
 
-              {/* Tooltip */}
               {tooltip?.i === i && (
                 <div
                   style={{
@@ -1264,7 +1390,6 @@ function Grid({
                 </div>
               )}
 
-              {/* Event dots */}
               {date &&
                 (evts.length || rems.length || stks.length || hasNote) && (
                   <div
@@ -1274,7 +1399,7 @@ function Grid({
                       left: "50%",
                       transform: "translateX(-50%)",
                       display: "flex",
-                      gap: 2,
+                      gap: 3,
                       flexWrap: "wrap",
                       justifyContent: "center",
                       maxWidth: 32,
@@ -1304,10 +1429,13 @@ function Grid({
                     {stks.length > 0 && (
                       <div
                         style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: 999,
-                          background: "#facc15",
+                          width: 8,
+                          height: 8,
+                          borderRadius: 1,
+                          background: "#fde047",
+                          border: "0.5px solid #ca8a04",
+                          transform: "rotate(-5deg)",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
                         }}
                       />
                     )}
@@ -1319,7 +1447,7 @@ function Grid({
                           borderRadius: 999,
                           background: S
                             ? "rgba(255,255,255,.5)"
-                            : "rgba(0,0,0,.25)",
+                            : "rgba(0,0,0,.35)",
                         }}
                       />
                     )}
@@ -1414,22 +1542,41 @@ const GlobalStyles = ({ accent }) => (
       0%,100% { opacity: 1; }
       50%     { opacity: .4; }
     }
-    @keyframes flipL {
-      0%   { transform: perspective(1400px) rotateY(0); }
-      45%  { transform: perspective(1400px) rotateY(-88deg); opacity: .2; }
-      55%  { transform: perspective(1400px) rotateY(88deg); opacity: .2; }
-      100% { transform: perspective(1400px) rotateY(0); }
+    
+    /* Layout & Responsiveness */
+    .cal-main-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
     }
-    @keyframes flipR {
-      0%   { transform: perspective(1400px) rotateY(0); }
-      45%  { transform: perspective(1400px) rotateY(88deg); opacity: .2; }
-      55%  { transform: perspective(1400px) rotateY(-88deg); opacity: .2; }
-      100% { transform: perspective(1400px) rotateY(0); }
+    .cal-left-col { width: 100%; }
+    .cal-right-col { width: 100%; display: flex; flex-direction: column; }
+    
+    .cal-date-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 11px;
     }
-    @media print {
-      .no-print { display: none !important; }
-      body { background: white !important; }
+    
+    @media (min-width: 768px) {
+      .cal-main-container { flex-direction: row; align-items: stretch; }
+      .cal-left-col { width: 40%; display: flex; flex-direction: column; }
+      .cal-right-col { width: 60%; }
+      .hero-wrap { height: 100% !important; border-radius: 20px 0 0 20px; }
+      .cal-right-col { border-radius: 0 20px 20px 0; }
+      
+      .cal-date-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+      .cal-cell {
+        min-height: 84px !important;
+      }
     }
+    @media print { .no-print { display: none !important; } body { background: white !important; } }
     * { box-sizing: border-box; }
   `}</style>
 );
@@ -1438,91 +1585,105 @@ const GlobalStyles = ({ accent }) => (
 
 export default function WallCalendar() {
   const [cur, setCur] = useState(new Date());
+
   const [data, setData] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("wcal3")) || {};
+      return JSON.parse(localStorage.getItem("wcal4")) || {};
     } catch {
       return {};
     }
   });
+
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem("wcal4_theme") === "dark";
+  });
+
   const [sels, setSels] = useState([]);
-  const [activeDate, setAD] = useState(null);
+  const [targetDates, setTargetDates] = useState(null); // Replaced activeDate -> takes an array of Dates
   const [showSettings, setSS] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [confetti, setCf] = useState(false);
-  const [flipAnim, setFA] = useState("");
-  const [isFlipping, setIF] = useState(false);
   const [accent, setAccent] = useState("#3b82f6");
   const [mNote, setMNote] = useState("");
 
   const month = cur.getMonth();
-
   const theme = useMemo(() => {
     const base = THEMES[month];
     const ci = data.customImages?.[month];
     return ci ? { ...base, image: ci } : base;
   }, [month, data.customImages]);
 
-  // Persist to localStorage
+  // Persist
   useEffect(() => {
     try {
-      localStorage.setItem("wcal3", JSON.stringify(data));
+      localStorage.setItem("wcal4", JSON.stringify(data));
     } catch {}
   }, [data]);
-
-  // Sync monthly note to state
+  useEffect(() => {
+    localStorage.setItem("wcal4_theme", isDark ? "dark" : "light");
+  }, [isDark]);
   useEffect(() => {
     const k = `${cur.getFullYear()}-${month}`;
     setMNote(data.monthlyNotes?.[k] || "");
-  }, [cur, data.monthlyNotes]);
+  }, [cur, data.monthlyNotes, month]);
 
   const updateData = useCallback(
-    (k, v) => setData((p) => ({ ...p, [k]: v })),
+    (k, v) =>
+      setData((p) => ({ ...p, [k]: typeof v === "function" ? v(p[k]) : v })),
     [],
   );
+
+  const bulkUpdateData = useCallback((type, dateObjArray, newItem) => {
+    setData((prev) => {
+      const nextTypeData = { ...(prev[type] || {}) };
+      dateObjArray.forEach((d) => {
+        const k = getDateKey(d);
+        if (type === "dayNotes") {
+          nextTypeData[k] = newItem;
+        } else {
+          nextTypeData[k] = [
+            ...(nextTypeData[k] || []),
+            { ...newItem, id: Date.now() + Math.random() },
+          ];
+        }
+      });
+      return { ...prev, [type]: nextTypeData };
+    });
+  }, []);
 
   const triggerConfetti = () => {
     setCf(true);
     setTimeout(() => setCf(false), 5000);
   };
 
-  const navigate = useCallback(
-    (dir) => {
-      if (isFlipping) return;
-      if (navigator.vibrate) navigator.vibrate(35);
-      setFA(dir === "next" ? "flipL" : "flipR");
-      setIF(true);
-      setTimeout(() => {
-        setCur(
-          (p) =>
-            new Date(
-              p.getFullYear(),
-              p.getMonth() + (dir === "next" ? 1 : -1),
-              1,
-            ),
-        );
-        setFA("");
-        setIF(false);
-      }, 420);
-    },
-    [isFlipping],
-  );
+  const navigate = useCallback((dir) => {
+    if (navigator.vibrate) navigator.vibrate(35);
+    setCur(
+      (p) =>
+        new Date(p.getFullYear(), p.getMonth() + (dir === "next" ? 1 : -1), 1),
+    );
+  }, []);
 
   const jumpToDate = (y, m) => setCur(new Date(y, m, 1));
-  const saveMNote = () =>
+
+  const handleMNoteChange = (e) => {
+    setMNote(e.target.value);
     updateData("monthlyNotes", {
       ...data.monthlyNotes,
-      [`${cur.getFullYear()}-${month}`]: mNote,
+      [`${cur.getFullYear()}-${month}`]: e.target.value,
     });
+  };
 
   const S = isDark;
   const font = FONTS[data.font || "sans"];
+  const allSelectedDates = getAllSelectedDates(sels);
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: S ? "#0f172a" : "#dfe3e8",
+        background: S
+          ? "radial-gradient(circle at top left, #1e293b 0%, #020617 100%)"
+          : "radial-gradient(circle at top left, #f8fafc 0%, #cbd5e1 100%)",
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
@@ -1533,19 +1694,18 @@ export default function WallCalendar() {
       <GlobalStyles accent={accent} />
       <Confetti active={confetti} />
 
-      <div style={{ width: "100%", maxWidth: 860 }}>
-        {/* Calendar card */}
-        <div
-          style={{
-            background: S ? "#1e293b" : "white",
-            borderRadius: 20,
-            boxShadow: S
-              ? "0 24px 80px rgba(0,0,0,.6)"
-              : "0 24px 80px rgba(0,0,0,.14)",
-            overflow: "hidden",
-            animation: flipAnim ? `${flipAnim} .42s ease` : "none",
-          }}
-        >
+      <div
+        className="cal-main-container"
+        style={{
+          background: S ? "#1e293b" : "white",
+          borderRadius: 20,
+          boxShadow: S
+            ? "0 24px 80px rgba(0,0,0,.6)"
+            : "0 24px 80px rgba(0,0,0,.14)",
+        }}
+      >
+        {/* LEFT COLUMN (HERO) */}
+        <div className="cal-left-col">
           <Hero
             theme={theme}
             currentDate={cur}
@@ -1556,9 +1716,15 @@ export default function WallCalendar() {
             accent={accent}
             setAccent={setAccent}
           />
+        </div>
+
+        {/* RIGHT COLUMN (GRID & TOOLS) */}
+        <div
+          className="cal-right-col"
+          style={{ background: S ? "#1e293b" : "white" }}
+        >
           <WeatherBar isDark={isDark} />
 
-          {/* Toolbar */}
           <div
             className="no-print"
             style={{
@@ -1566,28 +1732,52 @@ export default function WallCalendar() {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "10px 18px",
-              borderBottom: `0.5px solid ${S ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}`,
+              borderBottom: `0.5px solid ${S ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.15)"}`,
+              minHeight: 48,
             }}
           >
-            {/* Sticky note drag source */}
-            <div
-              draggable
-              onDragStart={(e) =>
-                e.dataTransfer.setData("text/plain", "sticky")
-              }
-              style={{
-                padding: "5px 12px",
-                background: "#fef08a",
-                borderRadius: 8,
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#713f12",
-                cursor: "grab",
-                border: "0.5px solid #fde047",
-                userSelect: "none",
-              }}
-            >
-              📌 Drag sticky note
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div
+                draggable
+                onDragStart={(e) =>
+                  e.dataTransfer.setData("text/plain", "sticky")
+                }
+                style={{
+                  padding: "5px 12px",
+                  background: "#fef08a",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#713f12",
+                  cursor: "grab",
+                  border: "0.5px solid #fde047",
+                  userSelect: "none",
+                }}
+              >
+                📌 Drag Sticky Note
+              </div>
+
+              {/* Bulk Action Button */}
+              {allSelectedDates.length > 0 && (
+                <button
+                  onClick={() => setTargetDates(allSelectedDates)}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 8,
+                    background: accent,
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <Edit3 size={12} /> Edit Selected ({allSelectedDates.length})
+                </button>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -1596,29 +1786,29 @@ export default function WallCalendar() {
                 style={{
                   padding: "5px 10px",
                   borderRadius: 8,
-                  border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
+                  border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.2)"}`,
                   background: "none",
                   cursor: "pointer",
                   fontSize: 11,
-                  color: S ? "rgba(255,255,255,.65)" : "rgba(0,0,0,.55)",
+                  color: S ? "rgba(255,255,255,.65)" : "rgba(0,0,0,.7)",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
                   fontFamily: font,
                 }}
               >
-                <Download size={12} /> Export .ics
+                <Download size={12} /> Export
               </button>
               <button
                 onClick={() => setSS(true)}
                 style={{
                   padding: "5px 10px",
                   borderRadius: 8,
-                  border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
+                  border: `0.5px solid ${S ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.2)"}`,
                   background: "none",
                   cursor: "pointer",
                   fontSize: 11,
-                  color: S ? "rgba(255,255,255,.65)" : "rgba(0,0,0,.55)",
+                  color: S ? "rgba(255,255,255,.65)" : "rgba(0,0,0,.7)",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
@@ -1630,7 +1820,6 @@ export default function WallCalendar() {
             </div>
           </div>
 
-          {/* Grid */}
           <Grid
             currentDate={cur}
             data={data}
@@ -1639,43 +1828,41 @@ export default function WallCalendar() {
             setSelections={setSels}
             isDark={isDark}
             accent={accent}
-            setActiveDate={setAD}
+            setTargetDates={setTargetDates}
             triggerConfetti={triggerConfetti}
           />
 
-          {/* Monthly notes */}
           <div
             style={{
               padding: "14px 18px 20px",
-              borderTop: `0.5px solid ${S ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)"}`,
+              borderTop: `0.5px solid ${S ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.1)"}`,
             }}
           >
             <div
               style={{
                 fontSize: 9,
                 fontWeight: 700,
-                opacity: 0.35,
+                opacity: S ? 0.35 : 0.6,
                 letterSpacing: 2,
                 textTransform: "uppercase",
                 marginBottom: 8,
-                color: S ? "white" : "black",
+                color: S ? "white" : "#0f172a",
               }}
             >
               Monthly Notes — {theme.name}
             </div>
             <textarea
               value={mNote}
-              onChange={(e) => setMNote(e.target.value)}
-              onBlur={saveMNote}
+              onChange={handleMNoteChange}
               placeholder={`What's happening in ${theme.name.charAt(0) + theme.name.slice(1).toLowerCase()}?`}
               style={{
                 width: "100%",
                 minHeight: 72,
                 padding: "10px 12px",
                 borderRadius: 8,
-                border: `0.5px solid ${S ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`,
-                background: S ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.015)",
-                color: S ? "rgba(255,255,255,.75)" : "rgba(0,0,0,.75)",
+                border: `0.5px solid ${S ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.15)"}`,
+                background: S ? "rgba(255,255,255,.04)" : "#f8fafc",
+                color: S ? "rgba(255,255,255,.85)" : "#0f172a",
                 fontSize: 13,
                 resize: "vertical",
                 outline: "none",
@@ -1686,32 +1873,34 @@ export default function WallCalendar() {
             />
           </div>
         </div>
-
-        {/* Hint bar */}
-        <div
-          className="no-print"
-          style={{
-            textAlign: "center",
-            marginTop: 10,
-            fontSize: 10,
-            opacity: 0.4,
-            color: S ? "white" : "black",
-          }}
-        >
-          Double-click a date to add events · Drag to paint range · Ctrl+click
-          for multi-range · Drag sticky onto any date
-        </div>
       </div>
 
-      {/* Modals */}
-      {activeDate && (
+      <div
+        className="no-print"
+        style={{
+          position: "absolute",
+          bottom: 10,
+          textAlign: "center",
+          width: "100%",
+          fontSize: 10,
+          opacity: S ? 0.4 : 0.6,
+          color: S ? "white" : "#0f172a",
+          pointerEvents: "none",
+        }}
+      >
+        Double-click date · Drag for multi-select · Drag sticky note onto any
+        date
+      </div>
+
+      {targetDates && (
         <DayModal
-          date={activeDate}
+          dates={targetDates}
           data={data}
           updateData={updateData}
+          bulkUpdateData={bulkUpdateData}
           isDark={isDark}
           triggerConfetti={triggerConfetti}
-          onClose={() => setAD(null)}
+          onClose={() => setTargetDates(null)}
         />
       )}
       {showSettings && (
