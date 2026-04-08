@@ -1,5 +1,5 @@
 import React from "react";
-import WallCalendar from "./components/calendar/WallCalendar";
+import WallCalendar from "../src/components/calender/WallCalendar.jsx";
 
 function App() {
   return (
