@@ -194,7 +194,9 @@ const extractColor = (src, fallback) =>
           b += d[i + 2];
           n++;
         }
-        resolve(`rgb(${~~(r / n)},${~~(g / n)},${~~(b / n)})`);
+        resolve(
+          `#${((1 << 24) | (~~(r / n) << 16) | (~~(g / n) << 8) | ~~(b / n)).toString(16).slice(1)}`,
+        );
       } catch {
         resolve(fallback);
       }
@@ -285,8 +287,29 @@ function Confetti({ active }) {
 
 // ─── WEATHER BAR ──────────────────────────────────────────────────────────────
 
+const getWDesc = (c) =>
+  c >= 95
+    ? "Thunderstorm"
+    : c >= 71
+      ? "Snow"
+      : c >= 61
+        ? "Rain"
+        : c >= 51
+          ? "Drizzle"
+          : c >= 45
+            ? "Fog"
+            : c >= 3
+              ? "Overcast"
+              : c === 2
+                ? "Partly cloudy"
+                : c === 1
+                  ? "Mostly clear"
+                  : "Clear";
+
 function WeatherBar({ isDark }) {
   const [fc, setFc] = useState([]);
+  const [tt, setTt] = useState({ show: false, x: 0, y: 0, data: null });
+
   useEffect(() => {
     fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=26.14&longitude=91.73&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Kolkata&forecast_days=7",
@@ -315,88 +338,153 @@ function WeatherBar({ isDark }) {
       <Sun size={13} />
     );
   const S = isDark;
+
   if (!fc.length) return null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        padding: "8px 20px",
-        background: S ? "rgba(0,0,0,0.25)" : "rgba(248,250,255,0.9)",
-        borderBottom: `0.5px solid ${S ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-        overflowX: "auto",
-        width: "100%",
-      }}
-    >
-      <span
-        style={{
-          fontSize: 9,
-          fontWeight: 700,
-          opacity: 0.4,
-          letterSpacing: 2,
-          whiteSpace: "nowrap",
-          color: S ? "white" : "black",
-          textTransform: "uppercase",
-        }}
-      >
-        7-DAY
-      </span>
+    <>
       <div
         style={{
           display: "flex",
-          flex: 1,
-          justifyContent: "space-between",
-          gap: 8,
+          alignItems: "center",
+          gap: 16,
+          padding: "8px 20px",
+          background: S ? "rgba(0,0,0,0.25)" : "rgba(248,250,255,0.9)",
+          borderBottom: `0.5px solid ${S ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+          overflowX: "auto",
+          width: "100%",
         }}
       >
-        {fc.map((d, i) => (
+        <span
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            opacity: 0.4,
+            letterSpacing: 2,
+            whiteSpace: "nowrap",
+            color: S ? "white" : "black",
+            textTransform: "uppercase",
+          }}
+        >
+          7-DAY
+        </span>
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          {fc.map((d, i) => (
+            <div
+              key={i}
+              onMouseMove={(e) =>
+                setTt({ show: true, x: e.clientX, y: e.clientY, data: d })
+              }
+              onMouseLeave={() =>
+                setTt({ show: false, x: 0, y: 0, data: null })
+              }
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                minWidth: 28,
+                cursor: "pointer",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  opacity: 0.5,
+                  color: S ? "white" : "black",
+                }}
+              >
+                {d.date.toLocaleDateString("en", { weekday: "short" })}
+              </span>
+              <span
+                style={{
+                  color:
+                    d.code >= 61
+                      ? "#60a5fa"
+                      : d.code >= 3
+                        ? "#94a3b8"
+                        : "#fbbf24",
+                }}
+              >
+                {icon(d.code)}
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: S ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)",
+                }}
+              >
+                {d.max}°
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {tt.show && tt.data && (
+        <div
+          style={{
+            position: "fixed",
+            left: tt.x + 15,
+            top: tt.y + 15,
+            zIndex: 99999,
+            background: S ? "rgba(15,23,42,0.95)" : "rgba(255,255,255,0.95)",
+            color: S ? "white" : "#0f172a",
+            border: S
+              ? "1px solid rgba(255,255,255,0.1)"
+              : "1px solid rgba(0,0,0,0.1)",
+            padding: "8px 12px",
+            borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+            pointerEvents: "none",
+            fontSize: 11,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            {tt.data.date.toLocaleDateString("en", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            })}
+          </div>
           <div
-            key={i}
             style={{
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              gap: 2,
-              minWidth: 28,
+              gap: 6,
+              marginBottom: 4,
             }}
           >
             <span
               style={{
-                fontSize: 9,
-                fontWeight: 600,
-                opacity: 0.5,
-                color: S ? "white" : "black",
-              }}
-            >
-              {d.date.toLocaleDateString("en", { weekday: "short" })}
-            </span>
-            <span
-              style={{
                 color:
-                  d.code >= 61
+                  tt.data.code >= 61
                     ? "#60a5fa"
-                    : d.code >= 3
+                    : tt.data.code >= 3
                       ? "#94a3b8"
                       : "#fbbf24",
               }}
             >
-              {icon(d.code)}
+              {icon(tt.data.code)}
             </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: S ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)",
-              }}
-            >
-              {d.max}°
-            </span>
+            <span style={{ fontWeight: 500 }}>{getWDesc(tt.data.code)}</span>
           </div>
-        ))}
-      </div>
-    </div>
+          <div style={{ opacity: S ? 0.7 : 0.6, fontWeight: 500 }}>
+            High: {tt.data.max}°C • Low: {tt.data.min}°C
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -529,18 +617,18 @@ function Hero({
         </button>
       </div>
 
-      {/* Made class-based to allow positioning via Media Query */}
       <div
         className="hero-text"
         style={{ position: "absolute", left: 26, zIndex: 10 }}
       >
         <div
           style={{
-            color: "rgba(255,255,255,.6)",
-            fontSize: 11,
-            letterSpacing: 5,
-            marginBottom: 2,
-            fontWeight: 600,
+            color: "#ffffff",
+            fontSize: 16,
+            letterSpacing: 6,
+            marginBottom: 4,
+            fontWeight: 800,
+            textShadow: "0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6)",
           }}
         >
           {currentDate.getFullYear()}
@@ -1356,7 +1444,6 @@ function Grid({
                 </button>
               )}
 
-              {/* Increased font size for holiday emojis here to 15px */}
               {hol && date && (
                 <div
                   title={hol.label}
@@ -1563,7 +1650,7 @@ const GlobalStyles = ({ accent }) => (
       max-width: 1000px;
       margin: 0 auto;
     }
-    .cal-left-col { width: 100%; }
+    .cal-left-col { width: 100%; display: flex; flex-direction: column; }
     .cal-right-col { width: 100%; display: flex; flex-direction: column; }
     
     .cal-date-btn {
@@ -1574,13 +1661,8 @@ const GlobalStyles = ({ accent }) => (
     
     .hero-text { bottom: 20px; }
 
+    /* TABLET: Stacked layout, bigger buttons */
     @media (min-width: 768px) {
-      .cal-main-container { flex-direction: row; align-items: stretch; }
-      .cal-left-col { width: 40%; display: flex; flex-direction: column; }
-      .cal-right-col { width: 60%; }
-      .hero-wrap { height: 100% !important; border-radius: 20px 0 0 20px; }
-      .cal-right-col { border-radius: 0 20px 20px 0; }
-      
       .cal-date-btn {
         width: 36px;
         height: 36px;
@@ -1589,11 +1671,22 @@ const GlobalStyles = ({ accent }) => (
       .cal-cell {
         min-height: 84px !important;
       }
+    }
+
+    /* LAPTOP: Side-by-side split layout */
+    @media (min-width: 1024px) {
+      .cal-main-container { flex-direction: row; align-items: stretch; }
+      .cal-left-col { width: 40%; }
+      .cal-right-col { width: 60%; }
+      .hero-wrap { height: 100% !important; border-radius: 20px 0 0 20px; }
+      .cal-right-col { border-radius: 0 20px 20px 0; }
+      
       .hero-text { 
         bottom: auto; 
         top: 20px; 
       }
     }
+
     @media print { .no-print { display: none !important; } body { background: white !important; } }
     * { box-sizing: border-box; }
   `}</style>
@@ -1695,14 +1788,16 @@ export default function WallCalendar() {
   const font = FONTS[data.font || "sans"];
   const allSelectedDates = getAllSelectedDates(sels);
 
+  // DYNAMIC BACKGROUND: Emphasized color on the left & right side for much better legibility!
+  const bgStyle = S
+    ? `linear-gradient(90deg, ${accent}80 0%, #020617 25%, #020617 75%, ${accent}80 100%)`
+    : `linear-gradient(90deg, ${accent}50 0%, #cbd5e1 25%, #cbd5e1 75%, ${accent}50 100%)`;
+
   return (
-    // Dynamic Radial background changes depending on accent color of current month
     <div
       style={{
         minHeight: "100vh",
-        background: S
-          ? `radial-gradient(circle at top left, ${accent}22 0%, #020617 100%)`
-          : `radial-gradient(circle at top left, ${accent}33 0%, #cbd5e1 100%)`,
+        background: bgStyle,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -1894,7 +1989,6 @@ export default function WallCalendar() {
         </div>
       </div>
 
-      {/* Moved down and changed position to relative so it won't be covered by elements below */}
       <div
         className="no-print"
         style={{
