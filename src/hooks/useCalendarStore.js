@@ -3,25 +3,32 @@ import { useState, useEffect, useCallback } from "react";
 export function useCalendarStore() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Persistence using Local Storage
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem("cal_data");
     return saved
       ? JSON.parse(saved)
-      : { monthlyNotes: {}, events: {}, font: "font-sans" };
+      : {
+          monthlyNotes: {},
+          events: {},
+          font: "font-sans",
+          stickyNotes: [], // Array of { id, text, dateKey }
+        };
   });
 
   useEffect(() => {
     localStorage.setItem("cal_data", JSON.stringify(data));
   }, [data]);
 
-  const [selection, setSelection] = useState({ start: null, end: null });
+  // Updated for Multi-Range (Ctrl+Click)
+  const [selections, setSelections] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Modal States
+  // Modals & UI State
   const [activeDateModal, setActiveDateModal] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showQuickJump, setShowQuickJump] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // 3D Flip State
   const [flipDirection, setFlipDirection] = useState("");
@@ -32,8 +39,6 @@ export function useCalendarStore() {
       if (isFlipping) return;
       setFlipDirection(dir === "next" ? "flip-next" : "flip-prev");
       setIsFlipping(true);
-
-      // Vibrate for mobile haptic feedback (if supported)
       if (navigator.vibrate) navigator.vibrate(50);
 
       setTimeout(() => {
@@ -46,30 +51,45 @@ export function useCalendarStore() {
             ),
         );
         setIsFlipping(false);
-      }, 500); // Matches CSS animation
+      }, 500);
     },
     [isFlipping],
   );
 
+  const jumpToDate = (year, month) => {
+    setCurrentDate(new Date(year, month, 1));
+    setShowQuickJump(false);
+  };
+
   const updateData = (key, value) =>
     setData((prev) => ({ ...prev, [key]: value }));
+
+  const triggerConfetti = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 4000);
+  };
 
   return {
     currentDate,
     setCurrentDate,
     navigateMonth,
+    jumpToDate,
     data,
     updateData,
-    selection,
-    setSelection,
+    selections,
+    setSelections,
     isDragging,
     setIsDragging,
     activeDateModal,
     setActiveDateModal,
     showSettings,
     setShowSettings,
+    showQuickJump,
+    setShowQuickJump,
     isDarkMode,
     setIsDarkMode,
+    showConfetti,
+    triggerConfetti,
     flipDirection,
     isFlipping,
   };
